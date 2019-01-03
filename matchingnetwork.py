@@ -1,4 +1,4 @@
-from keras.layers import Input, Conv2D, Lambda, merge, Dense, Flatten, MaxPooling2D, Subtract
+from keras.layers import Input, Conv2D, Lambda, merge, Dense, Flatten, MaxPooling2D, Subtract, LSTM
 from keras.models import Model, Sequential
 from keras.regularizers import l2
 from keras import backend as K
@@ -21,22 +21,29 @@ def b_init(shape, name=None):
     values=rng.normal(loc=0.5, scale=1e-2, size=shape)
     return K.variable(values, name=name)
 
-input_shape = (105, 105, 1)
+#input_shape = (92, 5)
+input_shape = (768, 23, 1)
 left_input = Input(input_shape)
 right_input = Input(input_shape)
 #build convnet to use in each siamese 'leg'
 convnet = Sequential()
-convnet.add(Conv2D(64, (10, 10), activation='relu', input_shape=input_shape,
+
+
+convnet.add(Conv2D(32, (50, 4), activation='relu', input_shape=input_shape,
                    kernel_initializer=W_init, kernel_regularizer=l2(2e-4)))
 convnet.add(MaxPooling2D())
-convnet.add(Conv2D(128, (7, 7), activation='relu',
-                   kernel_regularizer=l2(2e-4), kernel_initializer=W_init, bias_initializer=b_init))
-convnet.add(MaxPooling2D())
-convnet.add(Conv2D(128, (4, 4), activation='relu', kernel_initializer=W_init, kernel_regularizer=l2(2e-4), bias_initializer=b_init))
-convnet.add(MaxPooling2D())
-convnet.add(Conv2D(256, (4, 4), activation='relu', kernel_initializer=W_init, kernel_regularizer=l2(2e-4), bias_initializer=b_init))
+
+convnet.add(Conv2D(16, (25, 3), activation='relu', kernel_initializer=W_init, kernel_regularizer=l2(2e-4), bias_initializer=b_init))
 convnet.add(Flatten())
-convnet.add(Dense(4096, activation="sigmoid", kernel_regularizer=l2(1e-3), kernel_initializer=W_init, bias_initializer=b_init))
+convnet.add(Dense(16, activation="sigmoid", kernel_regularizer=l2(1e-3), kernel_initializer=W_init, bias_initializer=b_init))
+
+
+#convnet.add(LSTM(4, activation='relu', input_shape=input_shape,
+#                   kernel_initializer=W_init, kernel_regularizer=l2(2e-4), return_sequences=False))
+#convnet.add(Dense(64, activation="sigmoid", input_shape = input_shape,
+#                  kernel_regularizer=l2(1e-3), kernel_initializer=W_init, bias_initializer=b_init))
+#convnet.add(Dense(32, activation="sigmoid", kernel_regularizer=l2(1e-3), kernel_initializer=W_init, bias_initializer=b_init))
+#convnet.add(Dense(16, activation="sigmoid", kernel_regularizer=l2(1e-3), kernel_initializer=W_init, bias_initializer=b_init))
 #encode each of the two inputs into a vector with the convnet
 encoded_l = convnet(left_input)
 encoded_r = convnet(right_input)
@@ -46,7 +53,7 @@ L1_distance = lambda x: K.abs(x[0]-x[1])
 #both = K.abs(both)
 both = Lambda(L1_distance)([encoded_l, encoded_r])
 # both = merge([encoded_l, encoded_r], mode = L1_distance, output_shape=lambda x: x[0])
-prediction = Dense(1, activation='sigmoid', bias_initializer=b_init)(both)
+prediction = Dense(2, activation='softmax', bias_initializer=b_init)(both)
 siamese_net = Model(input=[left_input, right_input], output=prediction)
 #optimizer = SGD(0.0004,momentum=0.6,nesterov=True,decay=0.0003)
 

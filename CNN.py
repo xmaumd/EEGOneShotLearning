@@ -66,30 +66,33 @@ def EEG_CNN(input_shape):
     ### END CODE HERE ###
 
     return model
+    # return(X)
 
+# vecnlabel = sio.loadmat(
+#     'C:\\Users\\Shawn Ma\\Documents\\2017-18 Fall\\EEG project\\Data_Processing\\image_4channel.mat')
+# label = vecnlabel['label_feature_1hot']
+# train_data = vecnlabel['train_feature']
+# # train_data = train_data.reshape(112,100,41,4)
 
-vecnlabel = sio.loadmat(
-    'C:\\Users\\Shawn Ma\\Documents\\2017-18 Fall\\EEG project\\Data_Processing\\image_4channel.mat')
-label = vecnlabel['label_feature_1hot']
-train_data = vecnlabel['train_feature']
-# train_data = train_data.reshape(112,100,41,4)
+# print(label)
+# print(label.shape[0], label.shape[1])
+# print(train_data.shape[0], train_data.shape[1], train_data.shape[2], train_data.shape[3])
 
-print(label)
-print(label.shape[0], label.shape[1])
-print(train_data.shape[0], train_data.shape[1], train_data.shape[2], train_data.shape[3])
-
-model = EEG_CNN(input_shape=(100, 41, 4))
+model = EEG_CNN(input_shape=(768, 23, 1))
 model.summary()
+
+#trainset1 = np.load('train_set_0.npy')
+#train_label1 = np.load('train_label_soft_0.npy')
 
 opt = Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, decay=0.01)
 model.compile(loss='binary_crossentropy', optimizer=opt, metrics=["accuracy"])
-model.fit(train_data, label, batch_size=1, epochs=30)
+model.fit(train_set1[0:163], train_label1[0:163,:], batch_size=1, epochs=10)
 
-loss, acc = model.evaluate(train_data, label)
-pred = model.predict(train_data)
+loss, acc = model.evaluate(train_set1[164:166], train_label1[164:166,:])
+pred = model.predict(train_set1[164:166])
 
 num = []
-for i in range(label.shape[0]):
+for i in range(len(train_label1)):
     num.append(np.argmax(pred[i]))
 print(num)
 print(pred)
